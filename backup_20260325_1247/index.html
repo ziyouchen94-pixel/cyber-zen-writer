@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Zen Writer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+    #canvas { position: fixed; top: 0; left: 0; z-index: 0; width: 100vw; height: 100vh; }
+    .glass {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    textarea { caret-color: rgba(255,255,255,0.7); }
+    input[type=range] { -webkit-appearance: none; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; outline: none; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: rgba(255,255,255,0.9); border-radius: 50%; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+    /* Mixer panels hidden by default, show when .visible is on .mixer-container */
+    .mixer-panel { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+    .mixer-container.visible .mixer-panel { opacity: 1; pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="fixed top-0 left-0 right-0 h-[50px] flex justify-between items-center px-6 z-20 pointer-events-none">
+    <div class="tracking-[0.3em] text-sm opacity-80">RAIN</div>
+    <div id="debug" class="text-[10px] font-mono opacity-60"></div>
+  </div>
+
+  <div class="fixed inset-0 flex items-center justify-center pointer-events-none">
+    <div class="glass w-[80%] h-[65%] p-10 rounded-2xl relative pointer-events-auto transition-opacity duration-500 opacity-90 hover:opacity-100">
+      <textarea id="editor" class="w-full h-full outline-none resize-none leading-loose bg-transparent caret-white placeholder-gray-500 text-white/90 text-xl"
+        placeholder="Start writing..."></textarea>
+      <!-- Action buttons inside editor, bottom right -->
+      <div class="absolute bottom-6 right-6 flex gap-2 items-center pointer-events-auto">
+        <button id="mixer-toggle" class="w-10 h-10 glass rounded-full flex items-center justify-center text-lg hover:opacity-80 transition focus:outline-none" title="Mixer">⚙️</button>
+        <button id="clear-btn" class="px-3 py-1.5 text-xs glass rounded hover:opacity-80 transition">Clear</button>
+        <button id="export-btn" class="px-3 py-1.5 text-xs glass rounded hover:opacity-80 transition">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mixer panels -->
+  <div id="mixer-container" class="mixer-container fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-6 pointer-events-auto z-20">
+    <!-- Visual -->
+    <div class="mixer-panel glass rounded-xl p-5 min-w-[200px]">
+      <div class="text-[10px] uppercase tracking-[0.15em] mb-3 opacity-70">Visual</div>
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Rain</span><span id="rainValue" class="font-mono">70%</span></div>
+          <input type="range" id="rainAmount" min="0" max="1" step="0.01" value="0.7">
+        </div>
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Blur</span><span id="blurValue" class="font-mono">0%</span></div>
+          <input type="range" id="blurAmount" min="0" max="1" step="0.01" value="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- Sound -->
+    <div class="mixer-panel glass rounded-xl p-5 min-w-[280px]">
+      <div class="text-[10px] uppercase tracking-[0.15em] mb-3 opacity-70">Sound</div>
+      <div class="flex gap-3 items-center">
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Rain</span><span id="noiseValue" class="font-mono">50%</span></div>
+          <input type="range" id="noiseVolume" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Music</span><span id="musicValue" class="font-mono">50%</span></div>
+          <input type="range" id="musicVolume" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="ml-1">
+          <div class="text-xs opacity-60 mb-1">File</div>
+          <input type="file" id="musicFile" accept="audio/*" class="w-full text-[10px] text-gray-300 file:mr-1 file:py-0.5 file:px-2 file:rounded file:border-none file:bg-white/10 hover:file:bg-white/20">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

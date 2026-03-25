@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Zen Writer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500&family=Noto+Serif+SC:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
+    #canvas { position: fixed; top: 0; left: 0; z-index: 0; width: 100vw; height: 100vh; }
+    .glass {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      border-radius: 16px;
+    }
+    textarea { caret-color: rgba(255,255,255,0.7); }
+
+    /** Sliders - consistent light gray/white across browsers */
+    input[type=range] {
+      -webkit-appearance: none;
+      height: 4px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 2px;
+      outline: none;
+      margin: 0; padding: 0;
+      vertical-align: middle;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px; height: 14px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      margin-top: -5px; /* (14-4)/2 = 5px adjustment */
+    }
+    input[type=range]::-webkit-slider-runnable-track {
+      background: rgba(255,255,255,0.15);
+      height: 4px;
+      border-radius: 2px;
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 14px; height: 14px;
+      background: rgba(255,255,255,0.9);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    input[type=range]::-moz-range-track {
+      background: rgba(255,255,255,0.15);
+      height: 4px;
+      border-radius: 2px;
+    }
+
+    .mixer-panel { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+    .mixer-container.visible .mixer-panel { opacity: 1; pointer-events: auto; }
+
+    /* Font panel - right side, toggle-only */
+    #font-panel {
+      position: fixed;
+      right: 2rem;         /* right side */
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      width: 90px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(24px) saturate(120%);
+      -webkit-backdrop-filter: blur(24px) saturate(120%);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    #font-panel.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .panel-label {
+      font-size: 12px;
+      opacity: 0.5;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .font-btn {
+      width: 100%;
+      padding: 8px 0;
+      font-size: 11px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+      position: relative;
+    }
+    .font-btn::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      bottom: 0;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+    .font-btn:last-child::after { display: none; }
+    .font-btn.active { color: rgba(255,255,255,0.95); font-weight: 600; }
+    .font-btn:hover { background: rgba(255,255,255,0.03); }
+
+    .size-row { margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+    .size-btn {
+      width: 100%;
+      padding: 6px 0;
+      font-size: 11px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.7);
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .size-btn.active { color: rgba(255,255,255,0.95); font-weight: 600; }
+    .size-btn:hover { background: rgba(255,255,255,0.03); }
+
+    /* Custom scrollbar for editor - glassmorphism style */
+    #editor::-webkit-scrollbar {
+      width: 8px;
+    }
+    #editor::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.04);
+      border-radius: 4px;
+    }
+    #editor::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 4px;
+    }
+    #editor::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* Smoke dispersing animation */
+    @keyframes smoke-out {
+      0% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+      100% { opacity: 0; filter: blur(12px); transform: translateY(-60px) scale(1.05); }
+    }
+    .smoke-out { animation: smoke-out 1.5s ease forwards; }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="fixed top-0 left-0 right-0 h-[50px] flex justify-between items-center px-6 z-20 pointer-events-none">
+    <div class="tracking-[0.3em] text-sm opacity-80">RAIN</div>
+    <div id="debug" class="text-[10px] font-mono opacity-60"></div>
+  </div>
+
+  <div class="fixed inset-0 flex items-center justify-center pointer-events-none">
+    <div class="glass w-[80%] h-[65%] p-10 rounded-2xl relative pointer-events-auto transition-opacity duration-500 opacity-90 hover:opacity-100">
+      <textarea id="editor" class="w-full h-full outline-none resize-none leading-loose bg-transparent caret-white placeholder-gray-500 text-white/90"
+        placeholder="开始写作..."></textarea>
+
+      <div class="absolute bottom-6 right-6 flex gap-2 items-center pointer-events-auto">
+        <button id="rain-play" class="w-10 h-10 glass rounded-full flex items-center justify-center text-lg hover:opacity-80 transition" title="Play Rain">🔇</button>
+        <button id="font-toggle" class="w-10 h-10 glass rounded-full flex items-center justify-center text-sm font-serif hover:opacity-80 transition" title="Font Panel">T</button>
+        <button id="mixer-toggle" class="w-10 h-10 glass rounded-full flex items-center justify-center text-lg hover:opacity-80 transition" title="Mixer">⚙️</button>
+        <button id="clear-btn" class="px-3 py-1.5 text-xs glass rounded hover:opacity-80 transition">Clear</button>
+        <button id="export-btn" class="px-3 py-1.5 text-xs glass rounded hover:opacity-80 transition">Export</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Font panel -->
+  <div id="font-panel">
+    <div class="panel-label">字体</div>
+    <button data-font="hand" class="font-btn active">手写</button>
+    <button data-font="serif" class="font-btn">衬线</button>
+    <button data-font="sans" class="font-btn">无衬</button>
+
+    <div class="size-row">
+      <div class="panel-label" style="margin-top:0;margin-bottom:12px;">大小</div>
+      <button class="size-btn" data-size="18">18px</button>
+      <button class="size-btn active" data-size="26">26px</button>
+      <button class="size-btn" data-size="36">36px</button>
+    </div>
+  </div>
+
+  <!-- Mixer panels -->
+  <div id="mixer-container" class="mixer-container fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-6 pointer-events-auto z-20">
+    <div class="mixer-panel glass rounded-xl p-5 min-w-[200px]">
+      <div class="text-[10px] uppercase tracking-[0.15em] mb-3 opacity-70">Visual</div>
+      <div class="flex gap-4">
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Rain</span><span id="rainValue" class="font-mono">70%</span></div>
+          <input type="range" id="rainAmount" min="0" max="1" step="0.01" value="0.7">
+        </div>
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Blur</span><span id="blurValue" class="font-mono">0%</span></div>
+          <input type="range" id="blurAmount" min="0" max="1" step="0.01" value="0">
+        </div>
+      </div>
+    </div>
+    <div class="mixer-panel glass rounded-xl p-5 min-w-[280px]">
+      <div class="text-[10px] uppercase tracking-[0.15em] mb-3 opacity-70">Sound</div>
+      <div class="flex gap-3 items-center">
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Rain</span><span id="noiseValue" class="font-mono">50%</span></div>
+          <input type="range" id="noiseVolume" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="flex-1">
+          <div class="text-xs opacity-60 mb-1 flex justify-between"><span>Music</span><span id="musicValue" class="font-mono">50%</span></div>
+          <input type="range" id="musicVolume" min="0" max="1" step="0.01" value="0.5">
+        </div>
+        <div class="ml-1">
+          <div class="text-xs opacity-60 mb-1">File</div>
+          <input type="file" id="musicFile" accept="audio/*" class="w-full text-[10px] text-gray-300 file:mr-1 file:py-0.5 file:px-2 file:rounded file:border-none file:bg-white/10 hover:file:bg-white/20">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Backup folders
+backup_*/
+
+# Debug shader
+shader_debug.js
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Optional assets (if not needed)
+# bg.jpg
+# rain.mp3
